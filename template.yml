@@ -1,0 +1,173 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Description: AWS API Gateway with a Lambda Integration for importing Machine Learning stats to the SQL database
+
+Parameters:
+  Api_Name:
+    Type: String
+    Description: Name for the REST API
+
+Resources:
+
+  RestApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      ApiKeySourceType: HEADER
+      Description: API gateway for submitting ML stats
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+      Name: !Ref Api_Name
+
+  ApiResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId: !GetAtt RestApi.RootResourceId
+      PathPart: 'submitdata'
+      RestApiId: !Ref RestApi
+
+  PostMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: AWS_IAM
+      HttpMethod: POST
+      Integration:
+        ConnectionType: INTERNET
+        Credentials: !GetAtt ApiRole.Arn
+        IntegrationHttpMethod: POST
+        IntegrationResponses:
+          - StatusCode: 200
+        PassthroughBehavior: WHEN_NO_MATCH
+        TimeoutInMillis: 29000
+        Type: AWS
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaFunction.Arn}/invocations'
+      RequestValidatorId: !Ref ApiRequestValidator
+      MethodResponses:
+        - StatusCode: 200
+      OperationName: 'lambda'
+      ResourceId: !Ref ApiResource
+      RestApiId: !Ref RestApi
+
+  RequestModel:
+    Type: AWS::ApiGateway::Model
+    Properties:
+      ContentType: 'application/json'
+      RestApiId: !Ref RestApi
+      Schema: {"$schema": "http://json-schema.org/draft-04/schema#",
+      "title": "Stats",
+      "type": "object",
+      "properties": {
+          "blue_sold": {
+              "type": "string"
+          },
+          "red_sold": {
+              "type": "string"
+          },
+          "green_sold": {
+              "type": "string"
+          },
+          "location": {
+              "type": "string"
+          },
+          "date": {
+              "type": "string"
+          }
+      },
+      "required": ["blue_sold", "red_sold", "green_sold", "date"] }
+
+  ApiStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      DeploymentId: !Ref ApiDeployment
+      Description: API Stage v0
+      RestApiId: !Ref RestApi
+      StageName: 'v0'
+  
+  ApiRequestValidator:
+    Type: AWS::ApiGateway::RequestValidator
+    Properties:
+      Name: MyValidator
+      RestApiId: !Ref RestApi
+      ValidateRequestBody: True
+      ValidateRequestParameters: False
+
+  ApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn: PostMethod
+    Properties:
+      Description: ML Stats Lambda API Deployment
+      RestApiId: !Ref RestApi
+
+  ApiRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: ''
+            Effect: 'Allow'
+            Principal:
+              Service:
+                - 'apigateway.amazonaws.com'
+            Action:
+              - 'sts:AssumeRole'
+      Path: '/'
+      Policies:
+        - PolicyName: api_policy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action: 'lambda:*'
+                Resource: !GetAtt LambdaFunction.Arn
+
+  LambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: my_api_lambda
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.7
+      CodeUri: ./lambda_code/
+      MemorySize: 128
+      Timeout: 300
+      Role:
+        Fn::Join:
+          - ''
+          - - "arn:aws:iam::"
+            - Ref: AWS::AccountId
+            - ":role/"
+            - Ref: LambdaFunctionRole
+
+
+  LambdaFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Service:
+                - 'lambda.amazonaws.com'
+            Action:
+              - 'sts:AssumeRole'
+      Path: '/'
+
+  LambdaExecutionPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: api_lambda_execution_policy
+      Roles:
+        - !Ref LambdaFunctionRole
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Resource:
+              - "*"
