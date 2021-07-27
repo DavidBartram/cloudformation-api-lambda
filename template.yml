@@ -179,12 +179,12 @@ Resources:
     Properties:
       Description: Allows user to trigger the stats import API
       ManagedPolicyName: api_user_policy
-    PolicyDocument:
-      Version: 2012-10-17
-      Statement:
-        - Effect: Allow
-          Action:
-            - execute-api:Invoke
-            - execute-api:ManageConnections
-          Resource:
-            - !Join ['',[!Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:',!Ref RestApi, '*']]
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - execute-api:Invoke
+              - execute-api:ManageConnections
+            Resource:
+              - !Join ['',[!Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:',!Ref RestApi, '*']]
