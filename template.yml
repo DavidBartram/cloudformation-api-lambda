@@ -14,7 +14,6 @@ Resources:
     Type: AWS::ApiGateway::RestApi
     Properties:
       ApiKeySourceType: HEADER
-      Description: API gateway for submitting ML stats
       EndpointConfiguration:
         Types:
           - REGIONAL
