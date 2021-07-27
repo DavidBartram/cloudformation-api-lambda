@@ -4,7 +4,7 @@ Transform: AWS::Serverless-2016-10-31
 Description: AWS API Gateway with a Lambda Integration for importing stats
 
 Parameters:
-  Api_Name:
+  ApiName:
     Type: String
     Description: Name for the REST API
 
@@ -17,7 +17,7 @@ Resources:
       EndpointConfiguration:
         Types:
           - REGIONAL
-      Name: !Ref Api_Name
+      Name: !Ref ApiName
 
   ApiResource:
     Type: AWS::ApiGateway::Resource
