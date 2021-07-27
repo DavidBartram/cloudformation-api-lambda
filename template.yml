@@ -44,6 +44,9 @@ Resources:
         Type: AWS
         Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaFunction.Arn}/invocations'
       RequestValidatorId: !Ref ApiRequestValidator
+      RequestModels:
+        application/json:
+          !Ref RequestModel
       MethodResponses:
         - StatusCode: 200
       OperationName: 'lambda'
