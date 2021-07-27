@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 
-Description: AWS API Gateway with a Lambda Integration for importing Machine Learning stats to the SQL database
+Description: AWS API Gateway with a Lambda Integration for importing stats
 
 Parameters:
   Api_Name:
@@ -174,3 +174,18 @@ Resources:
               - logs:PutLogEvents
             Resource:
               - "*"
+
+  ApiUserPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description: Allows user to trigger the stats import API
+      ManagedPolicyName: api_user_policy
+    PolicyDocument:
+      Version: 2012-10-17
+      Statement:
+        - Effect: Allow
+          Action:
+            - execute-api:Invoke
+            - execute-api:ManageConnections
+          Resource:
+            - !Join ['',[!Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:',!Ref RestApi, '*']]
