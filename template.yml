@@ -77,7 +77,7 @@ Resources:
               "type": "string"
           }
       },
-      "required": ["blue_sold", "red_sold", "green_sold", "date"] }
+      "required": ["blue_sold", "red_sold", "green_sold", "date", "location"] }
 
   ApiStage:
     Type: AWS::ApiGateway::Stage
